@@ -17,14 +17,10 @@ jobs:
           netsh advfirewall firewall delete rule name="RDP-Tailscale"
           netsh advfirewall firewall add rule name="RDP-Tailscale" dir=in action=allow protocol=TCP localport=3389
 
-      - name: Create RDP User with Secure Password
+      - name: Set Administrator Password
         run: |
-          $password = "Passw0rd!" + (Get-Random -Minimum 1000 -Maximum 9999)
-          $securePass = ConvertTo-SecureString$password -AsPlainText -Force
-          New-LocalUser -Name "RDP" -Password $securePass -AccountNeverExpires
-          Add-LocalGroupMember -Group "Administrators" -Member "RDP"
-          Add-LocalGroupMember -Group "Remote Desktop Users" -Member "RDP"
-          echo "RDP_CREDS=User: RDP | Password: $password" >> $env:GITHUB_ENV
+          $pass = "Passw0rd123!"
+          net user runneradmin $pass
 
       - name: Install Tailscale
         run: |
@@ -55,8 +51,8 @@ jobs:
       - name: Maintain Connection
         run: |
           Write-Host "Address: $env:TAILSCALE_IP"
-          Write-Host "Username: RDP"
-          Write-Host "Password: $(echo$env:RDP_CREDS)"
+          Write-Host "Username: runneradmin"
+          Write-Host "Password: Passw0rd123!"
           while ($true) {
             Start-Sleep -Seconds 300
           }
