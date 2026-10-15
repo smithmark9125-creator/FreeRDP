@@ -19,40 +19,21 @@ jobs:
 
       - name: Set Administrator Password
         run: |
-          $pass = "Passw0rd123!"
-          net user runneradmin $pass
+          net user runneradmin Passw0rd123!
 
-      - name: Install Tailscale
-        run: |
-          $tsUrl = "https://pkgs.tailscale.com/stable/tailscale-setup-1.82.0-amd64.msi"
-          $installerPath = "$env:TEMP\tailscale.msi"
-          Invoke-WebRequest -Uri $tsUrl -OutFile$installerPath
-          Start-Process msiexec.exe -ArgumentList "/i", ""$installerPath"", "/quiet", "/norestart" -Wait
-          Remove-Item $installerPath -Force
-
-      - name: Establish Tailscale Connection
-        run: |
-          & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-$env:GITHUB_RUN_ID$tsIP = $null$retries = 0
-          while (-not $tsIP -and$retries -lt 10) {
-            $tsIP = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4
-            Start-Sleep -Seconds 5
-            $retries++
-          }
-          if (-not $tsIP) { Write-Error "Tailscale IP not assigned"; exit 1 }
-          echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
-
-      - name: Verify RDP Accessibility
-        run: |
-          Write-Host "Tailscale IP: $env:TAILSCALE_IP"
-          $testResult = Test-NetConnection -ComputerName$env:TAILSCALE_IP -Port 3389
-          if (-not $testResult.TcpTestSucceeded) { Write-Error "TCP connection failed"; exit 1 }
-          Write-Host "TCP connectivity successful!"
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
 
       - name: Maintain Connection
         run: |
-          Write-Host "Address: $env:TAILSCALE_IP"
+          $tsIP = (tailscale ip -4)
+          Write-Host "=== RDP ACCESS ==="
+          Write-Host "Address: $tsIP"
           Write-Host "Username: runneradmin"
           Write-Host "Password: Passw0rd123!"
+          Write-Host "=================="
           while ($true) {
             Start-Sleep -Seconds 300
           }
